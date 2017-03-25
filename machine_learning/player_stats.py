@@ -1,11 +1,63 @@
 import nflgame as nfl
 import matplotlib.pyplot as plt
+from database.config import CONFIG
 from sklearn.linear_model import LogisticRegression
 
 def find_runningbacks(players):
     '''Extracts running backs (RB) from a list of players'''
     runningbacks = {p : {'player' : players[p]}for p in players if players[p].position == 'RB'}
     return runningbacks
+
+def convert_stats_to_points(player_stats, PPR=True):
+    points = 0
+    #Passing
+    points += player_stats.passing_yds * CONFIG['Passing Yards']
+    points += player_stats.passing_tds * CONFIG['Passing Touchdowns']
+    points += player_stats.passing_twoptm * CONFIG['Two Point Conversion']
+    points += player_stats.passing_ints * CONFIG['Interceptions Thrown']
+    #TODO player_stats.passing_sk_yds * CONFIG['Sack Yards'] #Yards lost due to a sack
+
+
+    #Rushing
+    points += player_stats.rushing_yds * CONFIG['Rushing Yards']
+    points += player_stats.rushing_tds * CONFIG['Rushing Touchdowns']
+    points += player_stats.rushing_twoptm * CONFIG['Two Point Conversion']
+    #TODO player_stats.rushing_loss #when tackled for a loss
+
+    #Receiving
+    points += player_stats.receiving_yds * CONFIG["Receiving Yards"]
+    points += player_stats.receiving_tds * CONFIG["Receiving Touchdowns"]
+    points += player_stats.receiving_twoptm * CONFIG["Two Point Conversion"]
+    if PPR: #Points Per Reception
+        points+= player_stats.receiving_rec * CONFIG['Receiving Reception']
+
+    #Other
+    points += player_stats.fumbles_lost * CONFIG['Fumbles Lost']
+    points += player_stats.fumbles_rec * CONFIG['Fumbles Recovered']
+    points += player_stats.fumbles_rec_tds * CONFIG['Touchdowns']
+
+    #Kicking
+    #TODO player_stats.kicking_fgm (field goal made) -- player_stats.kicking_fgm_yds (fgm yards)
+    points += player_stats.kicking_xpmade * CONFIG['Point After Touchdown']
+    points += player_stats.kicking_xpb * CONFIG['Blocked Kicks']
+    points += player_stats.kicking_rec_tds * CONFIG['Returned for Touchdown']
+
+    #Kickoff Return
+    points += player_stats.kickret_tds * CONFIG['Returned for Touchdown']
+    return round(points, 2)
+
+def player_stats(stat, name, year):
+    games = nfl.games(year)
+    player = nfl.find(name)[0]
+
+    for i, game in enumerate(games):
+        if game.players.name(player.gsis_name):
+            stats = game.players.name(player.gsis_name).stat
+            print('Game {:2}, Week {:2} - {:4}'.format(i + 1, game.schedule['week'], stats))
+
+    print('-' * 25)
+    players = nfl.combine(games)
+    print('{:9} Season - {:4}'.format(year, players.name(player.gsis_name).stat))
 
 def yearly_stats(players, YEARS=None):
     if YEARS == None:
@@ -88,7 +140,6 @@ if __name__ == "__main__":
     #rbs = find_runningbacks(players)
     print(rbs)
     '''
-    print("hello")
     #yearly_stats(rbs)
     #stats = set().union(*(players[player].stats(2016).stats for player in players))
     #print(stats)

@@ -9,6 +9,7 @@ CONFIG = {
     "Receiving Touchdowns" : 6,
     "Two Point Conversion" : 2,
     "Fumbles Lost" : -2,
+    "Receiving Reception" : 1,
 
     #KICKERS
     "0-39 Yd" : 3,
