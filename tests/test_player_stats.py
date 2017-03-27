@@ -46,3 +46,25 @@ class PlayerStatsTestCase(unittest.TestCase):
         gronk = nfl.find('Rob Gronkowski')[0]
         actual = [2.10, 15.90, 29.20, 19.30, 21.90, 8.60]
         self._helper_points_to_stats(gronk, actual)
+
+    def test_gameplay_percentage(self):
+        gpp = self.ps.gameplay_percentage
+        actual = [
+            (0, 0),
+            (0.133, 0.065),
+            (0.234, 0.126),
+            (0.602, 0.29),
+            (0.47, 0.232),
+            (0.494, 0.222)
+        ]
+        players = [
+            nfl.find('Rob Gronkowski')[0],
+            nfl.find('Antonio Brown')[0],
+            nfl.find('Ezekiel Elliott')[0],
+            nfl.find('Andrew Luck')[0],
+            nfl.find('Ben Roethlisberger')[0],
+            nfl.find('Aaron Rodgers')[0],
+        ]
+
+        for i, player in enumerate(players):
+            self.assertEqual(gpp(player, nfl.one(2016,1,home=player.team, away=player.team)), actual[i])

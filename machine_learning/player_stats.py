@@ -1,12 +1,54 @@
 import nflgame as nfl
 import matplotlib.pyplot as plt
-from database.config import CONFIG
+from database.config import CONFIG, TEAMS, POSITIONS
 from sklearn.linear_model import LogisticRegression
 
 def find_runningbacks(players):
     '''Extracts running backs (RB) from a list of players'''
-    runningbacks = {p : {'player' : players[p]}for p in players if players[p].position == 'RB'}
+    #runningbacks = {p : {'player' : players[p]}for p in players if players[p].position == 'RB'}
+    runningbacks = [players[p] for p in players if players[p].position == 'RB']
     return runningbacks
+
+def runningback_stats(player_stats, player):
+    stats = []
+    #Points
+    stats.append(convert_stats_to_points(player_stats))
+
+    #Position
+    stats.append(POSITIONS["RUNNING BACK"])
+
+    #Points Per Rush Att
+    if player_stats.rushing_att:
+        ppra = round((player_stats.rushing_yds * CONFIG['Rushing Yards']
+                + player_stats.rushing_tds * CONFIG['Rushing Touchdowns']
+                + player_stats.rushing_twoptm * CONFIG['Two Point Conversion']
+                + player_stats.fumbles_lost * CONFIG['Fumbles Lost']) \
+               / player_stats.rushing_att, 2)
+    else:
+        ppra = 0
+    stats.append(ppra)
+
+    #Points Per Target Att
+    if player_stats.receiving_rec:
+        ppta =  round(( player_stats.receiving_yds * CONFIG["Receiving Yards"]
+                + player_stats.receiving_tds * CONFIG["Receiving Touchdowns"]
+                + player_stats.receiving_twoptm * CONFIG["Two Point Conversion"]
+                + player_stats.receiving_rec * CONFIG['Receiving Reception']) \
+                / player_stats.receiving_rec \
+                - 1, 2)
+    else:
+        ppta = 0
+    stats.append(ppta)
+
+    '''
+    #Points Per Special Teams
+    pppr = ( player_stats.puntret_yds * CONFIG['Rushing Yards']
+            + player_stats.puntret_tds * CONFIG['Rushing Touchdowns']) \
+            / player_stats.puntret_fair
+    stats.append(pppr)
+    '''
+    return stats
+
 
 def convert_stats_to_points(player_stats, PPR=True):
     points = 0
@@ -132,6 +174,24 @@ def team_stats(game):
     else:
         winner = False
     return scoring_margin, game.score_home, game.score_away, winner
+
+def gameplay_percentage(player, game):
+    try:
+        plays = game.drives.plays()
+        tot_plays = [play for play in plays]
+        team_plays = [play for play in tot_plays if play.team == player.team]
+        player_plays = [play for play in team_plays if play.has_player(player.playerid)]
+
+        team_play_percentage = round(len(player_plays)/len(team_plays), 3)
+        game_play_percentage = round(len(player_plays)/len(tot_plays), 3)
+        return team_play_percentage, game_play_percentage
+
+    except AttributeError:
+        #When no plays for a player
+        fmt = "{:20} --> did not play!"
+        print(fmt.format(player.name))
+        return 0, 0
+
 
 if __name__ == "__main__":
     '''
